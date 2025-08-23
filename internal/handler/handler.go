@@ -2,9 +2,9 @@ package handler
 
 import (
 	"context"
+	"github.com/yurazsb/uno/internal/boot"
+	"github.com/yurazsb/uno/pkg/attrs"
 	"sync/atomic"
-	"uno/internal/boot"
-	"uno/pkg/attrs"
 )
 
 type Handler func(ctx Context, next func())

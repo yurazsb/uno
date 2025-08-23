@@ -3,7 +3,7 @@ package encoder
 import (
 	"encoding/json"
 	"fmt"
-	"uno/internal/boot"
+	"github.com/yurazsb/uno/internal/boot"
 )
 
 // Encoder 编码器

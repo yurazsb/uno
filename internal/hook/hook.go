@@ -1,8 +1,6 @@
 package hook
 
-import (
-	"uno/internal/boot"
-)
+import "github.com/yurazsb/uno/internal/boot"
 
 type ServerHook interface {
 	OnStart(s boot.Server)

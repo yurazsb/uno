@@ -1,16 +1,16 @@
 package conf
 
 import (
+	"github.com/yurazsb/uno/internal/boot"
+	"github.com/yurazsb/uno/internal/decoder"
+	"github.com/yurazsb/uno/internal/encoder"
+	"github.com/yurazsb/uno/internal/framer"
+	"github.com/yurazsb/uno/internal/handler"
+	"github.com/yurazsb/uno/pkg/logger"
+	"github.com/yurazsb/uno/pkg/pool"
+	"github.com/yurazsb/uno/pkg/uuid"
 	"runtime"
 	"time"
-	"uno/internal/boot"
-	"uno/internal/decoder"
-	"uno/internal/encoder"
-	"uno/internal/framer"
-	"uno/internal/handler"
-	"uno/pkg/logger"
-	"uno/pkg/pool"
-	"uno/pkg/uuid"
 )
 
 // Config 定义了通信框架的运行时配置。

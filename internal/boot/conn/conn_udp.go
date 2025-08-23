@@ -3,12 +3,12 @@ package conn
 import (
 	"context"
 	"fmt"
+	"github.com/yurazsb/uno/internal/boot"
+	"github.com/yurazsb/uno/internal/conf"
+	"github.com/yurazsb/uno/internal/hook"
 	"net"
 	"sync"
 	"time"
-	"uno/internal/boot"
-	"uno/internal/conf"
-	"uno/internal/hook"
 )
 
 // ---- Key 优化（避免 addr.String() 带来的分配与 GC）----

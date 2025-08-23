@@ -1,8 +1,8 @@
 package decoder
 
 import (
+	"github.com/yurazsb/uno/internal/boot"
 	"strings"
-	"uno/internal/boot"
 )
 
 // Decoder 解码器

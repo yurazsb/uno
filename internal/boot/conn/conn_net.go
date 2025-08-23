@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/yurazsb/uno/internal/conf"
+	"github.com/yurazsb/uno/internal/hook"
 	"io"
 	"net"
 	"time"
-	"uno/internal/conf"
-	"uno/internal/hook"
 )
 
 type NETTransport struct {

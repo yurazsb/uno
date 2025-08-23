@@ -2,8 +2,8 @@ package boot
 
 import (
 	"context"
+	"github.com/yurazsb/uno/pkg/attrs"
 	"net"
-	"uno/pkg/attrs"
 )
 
 type Server interface {

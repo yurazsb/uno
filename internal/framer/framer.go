@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"uno/internal/boot"
+	"github.com/yurazsb/uno/internal/boot"
 )
 
 // Framer 拆帧 解码器接口

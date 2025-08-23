@@ -3,16 +3,16 @@ package uno
 import (
 	"context"
 	"fmt"
+	"github.com/yurazsb/uno/internal/boot"
+	"github.com/yurazsb/uno/internal/boot/tcp"
+	"github.com/yurazsb/uno/internal/boot/udp"
+	"github.com/yurazsb/uno/internal/conf"
+	"github.com/yurazsb/uno/internal/decoder"
+	"github.com/yurazsb/uno/internal/encoder"
+	"github.com/yurazsb/uno/internal/framer"
+	"github.com/yurazsb/uno/internal/handler"
+	"github.com/yurazsb/uno/internal/hook"
 	"time"
-	"uno/internal/boot"
-	tcp2 "uno/internal/boot/tcp"
-	udp2 "uno/internal/boot/udp"
-	"uno/internal/conf"
-	"uno/internal/decoder"
-	"uno/internal/encoder"
-	"uno/internal/framer"
-	"uno/internal/handler"
-	"uno/internal/hook"
 )
 
 type Server = boot.Server
@@ -198,10 +198,10 @@ func Serve(ctx context.Context, hook hook.ServerHook, addr string, opts ...Optio
 	// 启动服务
 	switch cfg.Network {
 	case "tcp", "tcp4", "tcp6":
-		srv := tcp2.NewServer(ctx, cfg, hook, addr)
+		srv := tcp.NewServer(ctx, cfg, hook, addr)
 		return srv.Listen()
 	case "udp", "udp4", "udp6":
-		srv := udp2.NewServer(ctx, cfg, hook, addr)
+		srv := udp.NewServer(ctx, cfg, hook, addr)
 		return srv.Listen()
 	default:
 		return fmt.Errorf("unknown network: %s", cfg.Network)
@@ -216,9 +216,9 @@ func Dial(ctx context.Context, hook hook.ConnHook, addr string, opts ...Option) 
 	var c boot.Client
 	switch cfg.Network {
 	case "tcp", "tcp4", "tcp6":
-		c = tcp2.NewClient(ctx, cfg, hook, addr)
+		c = tcp.NewClient(ctx, cfg, hook, addr)
 	case "udp", "udp4", "udp6":
-		c = udp2.NewClient(ctx, cfg, hook, addr)
+		c = udp.NewClient(ctx, cfg, hook, addr)
 	default:
 		return nil, fmt.Errorf("unknown network: %s", cfg.Network)
 	}

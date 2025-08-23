@@ -3,14 +3,14 @@ package tcp
 import (
 	"context"
 	"errors"
+	"github.com/yurazsb/uno/internal/boot"
+	"github.com/yurazsb/uno/internal/boot/conn"
+	"github.com/yurazsb/uno/internal/conf"
+	"github.com/yurazsb/uno/internal/hook"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
-	"uno/internal/boot"
-	"uno/internal/boot/conn"
-	"uno/internal/conf"
-	"uno/internal/hook"
 )
 
 type Server struct {
