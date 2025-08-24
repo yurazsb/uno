@@ -39,7 +39,7 @@
 ##### 安装
 
 ```sh
-go get github.com/yurazsb/uno
+go get github.com/yurazsb/uno@v0.1.3
 ```
 
 

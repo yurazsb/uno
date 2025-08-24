@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.0 - 2025-08-23
+## v0.1.3 - 2025-08-23
 ### Added
 - 初始发布：TCP/UDP 统一抽象（Serve/Dial + Hook）
 - Framer / Codec / Middleware 基础能力
