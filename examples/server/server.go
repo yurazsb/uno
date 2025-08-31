@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/yurazsb/uno"
+	"github.com/yurazsb/uno/internal/boot"
 	"log"
-	"uno"
-	"uno/internal/boot"
 )
 
 type EchoServer struct {
@@ -44,7 +44,12 @@ func (e *EchoServer) OnRead(c boot.Conn, buf []byte, err error) {
 }
 func (e *EchoServer) OnMessage(c boot.Conn, msg any) {
 	log.Printf("OnMessage %s %v %s", c.RemoteAddr().String(), msg, string(msg.([]byte)))
-	_ = c.Send("hello client!")
+	done := c.Send("hello client!")
+	err := <-done
+	if err != nil {
+		fmt.Printf("Send err %s %v", c.RemoteAddr().String(), err)
+	}
+	fmt.Printf("Send success %s\n", c.RemoteAddr().String())
 }
 
 func main() {

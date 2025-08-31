@@ -2,17 +2,41 @@
 
 #### 简介
 
-**uno** 是一套面向高并发与扩展性的 **TCP/UDP 通信框架**。意在以 **统一抽象** 将「连接管理、流式帧解析（Framer）、消息编解码（Codec）、中间件链（Middleware）、路由分发（Dispatcher）」无缝串联，让你专注在 **业务协议与处理逻辑**，而不是底层网络细节。
+**Uno** 是一个用 Go 编写的轻量级事件驱动网络框架，专注于 **高性能、模块化和易扩展**。
+ 它支持 **TCP** 和 **UDP（伪连接）**，适用于物联网服务器、实时游戏服务器、网关中间件等需要高并发、低延迟通信的场景。
 
-**核心特性一览：**
+**核心特性：**
 
-- **统一模型：** TCP 与 UDP（伪连 接）共享一致的 `Server / Client / Conn` 抽象与事件回调（`OnConnect / OnMessage / OnClose`等）。
-- **可插拔协议栈：** Framer 负责分帧、Codec 负责序列化，二者解耦；支持内置实现与自定义扩展。
-- **中间件链：** 类似 HTTP 的拦截器链，内置或自定义日志、鉴权、限流（RateLimiter）等能力；支持路由分发（Dispatcher）。
-- **连接生命周期管理：** 连接属性存储、心跳/空闲检测、读写超时、优雅关闭与错误恢复。
-- **事件驱动高并发：** 读/写/控制三通道并发模型，配合可选 Goroutine 池，稳定处理突发流量。
-- **易于上手与维护：** 清晰的包结构与接口边界，示例齐全，适合二次开发与定制。
-- `uno` 完全基于 Go 标准库构建，未引入任何第三方依赖。
++ **零第三方依赖**：完全基于 Go 标准库构建，无外部依赖，保证可移植性与稳定性。包结构清晰、接口边界明确，便于二次开发和维护。
+
++ **统一的 TCP/UDP 模型**：在同一抽象层上同时支持 TCP 与 UDP，屏蔽底层复杂实现与差异，让开发者以一致的方式快速构建服务或客户端，更聚焦于业务逻辑。
+
++ **事件驱动架构**：采用事件驱动模型 (`EventLoop`)，每个连接独立运行 **读/写/控制** 三通道，配合可替换的轻量级 Goroutine 池，实现高效并发事件处理。
+
++ **连接生命周期管理**：提供完善的连接抽象 (`Conn`)，支持：
+
+  - 上下文控制（Context）
+  - 属性存储（Key-Value）
+  - 心跳与空闲检测
+  - 读写超时与异常恢复
+  - 优雅关闭与资源回收
+
++ **协议解耦与扩展：**
+
+  - **Framer**：流式帧分割器，支持自定义协议的拆包/粘包处理，内置常用实现。
+  - **Codec**：编解码器，负责消息序列化与反序列化，支持 JSON、二进制等多种格式，易于扩展。
+
++ **中间件链路机制**
+
+  支持基于消息的中间件链，具备可插拔式扩展能力，内置 限流（RateLimitHandler）与 路由（RouterHandler）组件。
+
++ **高可用与容错**
+   内建错误恢复机制与 panic 捕获，确保单个连接异常不会影响全局服务；支持服务端优雅下线，保障连接安全释放。
+
++ **易用与高性能并重**
+   提供简洁 API（`Serve` / `Dial`），默认配置即可快速上手；同时保留足够的扩展接口，满足复杂业务场景的性能优化需求。
+
+Uno 旨在为开发者提供一个 **易于上手**，但又足够灵活和高性能的通信框架。
 
 **典型场景：**
 
@@ -39,7 +63,7 @@
 ##### 安装
 
 ```sh
-go get github.com/yurazsb/uno@v0.1.3
+go get github.com/yurazsb/uno@v0.1.4
 ```
 
 
@@ -58,7 +82,7 @@ func (e *EchoServer) OnMessage(c core.Conn, msg any) {
 	log.Printf("OnMessage %s %v %s", c.RemoteAddr().String(), msg, string(msg.([]byte)))
     
 	// 回发给客户端
-    _ = c.Send("hello client!")
+    c.Send("hello client!")
 }
 
 func main() {
@@ -103,7 +127,7 @@ func main() {
 	tick := time.NewTicker(time.Second * 2)
 	defer tick.Stop()
 	for range tick.C {
-		_ = conn.Send("hello server!")
+		conn.Send("hello server!")
 	}
 }
 
@@ -191,22 +215,22 @@ uno.Dail(context.Background(), &MyHook{}, "127.0.0.1:9090")
 
 `uno` 的 **Config** 定义了通信框架的运行时行为，包括网络类型、协程池、日志、帧解析器、编码器/解码器、全局中间件等。
 
-| 字段            | 默认值                            | 说明                       |
-| --------------- | --------------------------------- | -------------------------- |
-| Pool            | 高性能协程池（Hybrid 模式）       | 用于事件回调和任务分发     |
-| Logger          | `logx.Default("uno", logx.DEBUG)` | 日志输出器                 |
-| Framer          | 默认长度前缀帧                    | 用于消息切分               |
-| Decoder         | 默认解码器                        | 将二进制数据解码为消息对象 |
-| Encoder         | 默认编码器                        | 将消息对象编码为二进制数据 |
-| Handlers        | 空链                              | 全局中间件链               |
-| Network         | `"tcp"`                           | 网络类型                   |
-| IDGenerator     | NanoID(10)                        | 生成连接唯一 ID            |
-| KeepAlivePeriod | 2 分钟                            | TCP keepalive 探测间隔     |
-| WriteTimeout    | 30 秒                             | 单次写操作超时             |
-| ReadBufferSize  | 4096 字节                         | 读缓冲区大小               |
-| MTU             | 1472 字节                         | UDP 最大传输单元           |
-| IdleTimeout     | 0 或 UDP 服务端伪连接默认 5 分钟  | 空闲连接超时               |
-| TickInterval    | 0                                 | 内部定时任务周期           |
+| 字段            | 默认值                                                     | 说明                       |
+| --------------- | ---------------------------------------------------------- | -------------------------- |
+| Pool            | 高性能协程池（Hybrid 模式）                                | 用于事件回调和任务分发     |
+| Logger          | `logx.Default("uno", logx.DEBUG)`                          | 日志输出器                 |
+| Framer          | 默认帧解析器                                               | 用于消息切分               |
+| Decoder         | 默认解码器                                                 | 将二进制数据解码为消息对象 |
+| Encoder         | 默认编码器                                                 | 将消息对象编码为二进制数据 |
+| Handlers        | 空链                                                       | 全局中间件链               |
+| Network         | `"tcp"`                                                    | 网络类型                   |
+| IDGenerator     | NanoID(10)                                                 | 生成连接唯一 ID            |
+| KeepAlivePeriod | 2 分钟                                                     | TCP keepalive 探测间隔     |
+| WriteTimeout    | 30 秒                                                      | 单次写操作超时             |
+| ReadBufferSize  | 4096 字节                                                  | 读缓冲区大小               |
+| MTU             | 1472 字节                                                  | UDP 最大传输单元           |
+| IdleTimeout     | 0 或 UDP 服务端伪连接默认 5 分钟（伪连接空闲超时会被释放） | 空闲连接超时               |
+| TickInterval    | 0                                                          | 内部定时任务周期           |
 
 > 通过 **`WithXXX` 方法**构建配置
 
@@ -942,6 +966,11 @@ type Pool interface {
 - 这样保证业务逻辑不会与核心 IO 读写抢占同一个 goroutine，提升系统整体的 **稳定性** 和 **吞吐能力**。
 
 ---
+
+### 作者
+
+由 [yurazsb](https://github.com/yurazsb) 开发和维护。  
+测试阶段，欢迎 issue / PR 共同完善。
 
 ### End
 

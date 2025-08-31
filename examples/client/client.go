@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/yurazsb/uno"
+	"github.com/yurazsb/uno/internal/boot"
 	"log"
 	"time"
-	"uno"
-	"uno/internal/boot"
 )
 
 type EchoClient struct {
@@ -54,7 +54,12 @@ func main() {
 	for {
 		select {
 		case <-tick.C:
-			_ = conn.Send("hello server!")
+			done := conn.Send("hello server!")
+			err := <-done
+			if err != nil {
+				fmt.Printf("Send err %v", err)
+			}
+			fmt.Printf("Send success\n")
 		}
 	}
 }

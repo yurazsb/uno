@@ -32,6 +32,12 @@ type Transport interface {
 	Stop(c *Conn)                    // 资源收尾
 }
 
+// SendResult 发送结果
+type SendResult struct {
+	Err  error
+	Done chan struct{}
+}
+
 // Conn 会话层
 type Conn struct {
 	T Transport
@@ -54,7 +60,7 @@ type Conn struct {
 
 	closed chan struct{}
 
-	sendCh chan []byte
+	msgCh chan *message
 
 	framer  framer.Framer
 	decoder decoder.Decoder
@@ -78,7 +84,7 @@ func NewConn(ctx context.Context, t Transport, cfg *conf.Config, hook hook.ConnH
 		Cfg:        cfg,
 		Hook:       hook,
 		Wg:         new(sync.WaitGroup),
-		sendCh:     make(chan []byte, 10_000),
+		msgCh:      make(chan *message, 1_000_000_000),
 		closed:     make(chan struct{}),
 		Attributes: attrs.New[any, any](true),
 	}
@@ -109,22 +115,26 @@ func (c *Conn) RemoteAddr() net.Addr         { return c.Remote }
 func (c *Conn) Attrs() attrs.Attrs[any, any] { return c.Attributes }
 func (c *Conn) IsActive() bool               { return c.active.Load() }
 
-func (c *Conn) Send(msg any) error {
+func (c *Conn) Send(msg any) <-chan error {
+	done := make(chan error, 1)
 	if !c.IsActive() {
-		return net.ErrClosed
+		done <- net.ErrClosed
+		return done
 	}
 
 	buf, err := c.encoder(c, msg)
 	if err != nil {
-		return fmt.Errorf("encoder error: %w", err)
+		done <- fmt.Errorf("encoder error: %w", err)
+		return done
 	}
 
 	select {
 	case <-c.Ctx.Done():
-		return net.ErrClosed
-	case c.sendCh <- buf:
+		done <- net.ErrClosed
+		return done
+	case c.msgCh <- &message{buf: buf, done: done}:
 		c.dispatchSend(msg)
-		return nil
+		return done
 	}
 }
 
@@ -249,8 +259,8 @@ func (c *Conn) mainLoop(wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-c.Ctx.Done():
-			close(c.sendCh) // 关闭消息队列
-			c.Wg.Wait()     // 等他其他工作线程结束
+			close(c.msgCh) // 关闭消息队列
+			c.Wg.Wait()    // 等他其他工作线程结束
 			return
 		case <-tickCh:
 			c.dispatchTick()
@@ -273,16 +283,20 @@ func (c *Conn) writeLoop() {
 	c.Wg.Add(1)
 	defer c.Wg.Done()
 
-	for buf := range c.sendCh {
-		err := c.T.Write(c, buf)
+	for msg := range c.msgCh {
+		err := c.T.Write(c, msg.buf)
 
-		c.Touch()                 //刷新获取时间
-		c.dispatchWrite(buf, err) //调用写入回调
+		c.Touch()                     // 刷新获取时间
+		c.dispatchWrite(msg.buf, err) // 调用写入回调
+		msg.done <- err               // 通知发送方
+		close(msg.done)
 
 		// 底层连接已关闭 结束循环
 		if errors.Is(err, net.ErrClosed) {
 			// 尝试 drain 剩余数据再退出
-			for range c.sendCh {
+			for m := range c.msgCh {
+				m.done <- net.ErrClosed // 通知发送方连接已关闭
+				close(msg.done)
 			}
 			c.Cancel() // 触发关闭信号
 			break
@@ -304,3 +318,9 @@ func (c *Conn) dispatchRead(buf []byte, err error) {
 	c.SubmitTask(func() { c.Hook.OnRead(c, buf, err) })
 }
 func (c *Conn) dispatchMessage(msg any) { c.SubmitTask(func() { c.Hook.OnMessage(c, msg) }) }
+
+// message 定义发送消息
+type message struct {
+	buf  []byte
+	done chan error
+}

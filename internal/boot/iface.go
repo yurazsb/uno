@@ -24,7 +24,7 @@ type Conn interface {
 	RemoteAddr() net.Addr
 	Attrs() Attrs
 	IsActive() bool
-	Send(msg any) error
+	Send(msg any) <-chan error
 	Close()
 }
 
