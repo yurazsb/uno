@@ -119,18 +119,21 @@ func (c *Conn) Send(msg any) <-chan error {
 	done := make(chan error, 1)
 	if !c.IsActive() {
 		done <- net.ErrClosed
+		close(done)
 		return done
 	}
 
 	buf, err := c.encoder(c, msg)
 	if err != nil {
 		done <- fmt.Errorf("encoder error: %w", err)
+		close(done)
 		return done
 	}
 
 	select {
 	case <-c.Ctx.Done():
 		done <- net.ErrClosed
+		close(done)
 		return done
 	case c.msgCh <- &message{buf: buf, done: done}:
 		c.dispatchSend(msg)

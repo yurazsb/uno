@@ -16,3 +16,7 @@
 - **Send API**：方法签名由 `Send(msg any) error` 改为 `Send(msg any) <-chan error`，  
   现在返回一个异步错误通道，用于更灵活地处理发送结果。⚠️ 此为 **Breaking Change**，请更新调用方式。
 - 文档优化：改进了核心特性介绍，调整部分术语表达，使整体更清晰易懂。
+
+## v0.1.5 - 2025-09-01
+### Changed
+- **Send API**：方法逻辑优化。

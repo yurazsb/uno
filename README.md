@@ -63,7 +63,7 @@ Uno 旨在为开发者提供一个 **易于上手**，但又足够灵活和高�
 ##### 安装
 
 ```sh
-go get github.com/yurazsb/uno@v0.1.4
+go get github.com/yurazsb/uno@v0.1.5
 ```
 
 
